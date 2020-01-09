@@ -1,0 +1,3 @@
+Use F_Single,ImgIndex=4
+epipolar constraint: [[4.2602936]]
+epipolar distance: [[9613.89002968]]

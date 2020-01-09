@@ -1,0 +1,3 @@
+Use F_RANSAC,ImgIndex=20
+epipolar constraint: [[0.08097487]]
+epipolar distance: [[7.49769446e-07]]

@@ -1,0 +1,3 @@
+Use F_GT,ImgIndex=20
+epipolar constraint: [[0.00360577]]
+epipolar distance: [[3.38040865e-09]]

@@ -1,0 +1,3 @@
+Use F_epc_loss,ImgIndex=20
+epipolar constraint: [[33.80824556]]
+epipolar distance: [[296349.06978326]]
