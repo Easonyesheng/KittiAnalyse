@@ -70,6 +70,7 @@ class KittiAnalyse(object):
             i+=1
         print('vessel shape:',X.shape)
         self.X = X
+        self.shape = [w,h]
         return X
     
     def Paser(self):
@@ -312,7 +313,7 @@ class KittiAnalyse(object):
         img_left[:,:,0] = self.X[img_index,:,:,0]
         img_left[:,:,1] = img_left[:,:,0]
         img_left[:,:,2] = img_left[:,:,1]
-        img_right[:,:,0] = self.X[img_index,:,:,0]
+        img_right[:,:,0] = self.X[img_index,:,:,1]
         img_right[:,:,1] = img_right[:,:,0]
         img_right[:,:,2] = img_right[:,:,1]
         
@@ -320,11 +321,13 @@ class KittiAnalyse(object):
             self.F.all()
         except AttributeError:
             self.F_GT_rected_get()
+            print("load F_GT")
         
         try:
             self.match_pts1.all()
         except AttributeError:
             self.exact_match_points_sift(img_index)
+            print("load matching points")
         
         # if len(self.match_pts1) < 10:
         #     img_index+=1
@@ -379,6 +382,13 @@ class KittiAnalyse(object):
         
         return err / float(len(pts1))
 
+
+    def half_sym_epipolar_dist(self,img_index):
+        pass
+
+
+
+
     def metrics_ep_dist(self,img_index):
         '''
         calcualte the symmetry epipolar distance of the [img_index]th image pair
@@ -411,22 +421,43 @@ class KittiAnalyse(object):
         return err / float(len(pts1))
     
 
+    def MP_move(self, dist=1):
+        '''
+        move matching points to test metric
+        '''
+        for i in range(self.match_pts1.shape[0]):
+            self.match_pts2[i,0] += dist
+            # print("before move: %d" %self.match_pts2[i,1])
+            self.match_pts2[i,1] += dist
+            # print("after move: %d" %self.match_pts2[i,1])
+            if self.match_pts2[i,0] > self.shape[0]:
+                self.match_pts2[i,0] = self.shape[0]
+            if self.match_pts2[i,1] > self.shape[1]:
+                self.match_pts2[i,1] = self.shape[1]
+
 
 if __name__ == "__main__":
 
-    imgpath = r'D:\F_Estimation\deepF_noCorrs\data\kitti\2011_09_26\2011_09_26_drive_0051_sync\\'
+    # imgpath = r'D:\F_Estimation\deepF_noCorrs\data\kitti\2011_09_26\2011_09_26_drive_0051_sync\\'
 
+    imgpath = r'D:\F_Estimation\UnrectifiedData\2011_09_26_drive_0001_extract\2011_09_26\2011_09_26_drive_0001_extract'
+    # imgpath = r"D:\F_Estimation\deepF_noCorrs\data\Pred\Pred1_12_07\\"
     # for RAW DATA all images have the same calib_flie
     calib_path = r'D:\F_Estimation\deepF_noCorrs\data\kitti\2011_09_26\calib_cam_to_cam.txt' 
 
     save_path = r'D:\F_Estimation\deepF_noCorrs\Code\Util\Kitti_ana\Result\Visualization'
 
-    # F_path = r'D:\F_Estimation\deepF_noCorrs\Pred_Result\Simaese_F_GT_changed_b2_lr-3_600.txt' # F_Simaese
+    F_path = r'D:\F_Estimation\deepF_noCorrs\Pred_Result\Simaese_suss\0.txt' # F_Simaese_suss
     # F_path = r'D:\F_Estimation\deepF_noCorrs\Pred_Result\F_GT_Changed_SingleNet.txt' # F_Single
-    # F_path = r'D:\F_Estimation\deepF_noCorrs\Pred_Result\Simaese_epW-2\0.txt' # F_epc_loss
-    F_path = r'D:\F_Estimation\deepF_noCorrs\Pred_Result\Simaese_edW-3_fix\0.txt' # F_epd_loss
+    # F_path = r'D:\F_Estimation\deepF_noCorrs\Pred_Result\Simaese_eclossw-3_goodsave_suss\0.txt' # F_epc_loss_suss
+    # F_path = r'D:\F_Estimation\deepF_noCorrs\Pred_Result\Simaese_edW-3_fix\0.txt' # F_epd_loss
 
-    F_name = 'F_epd_loss'
+    # F_name = 'F_GT_testF'
+    # F_name = 'F_Simaese_suss'
+    # F_name = 'F_RANSAC'
+    # F_name = 'F_GT'
+    F_name = 'F_ecloss_suss'
+
     save_path = os.path.join(save_path,F_name)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -438,17 +469,41 @@ if __name__ == "__main__":
     RANSAC 失效
     '''
     kf.load_img_patch()
-    kf.get_good_match(img_index)
+    kf.get_good_match(img_index) # load matching points and get good match
 
     
-    save_prefix = F_name + '_P_SIFT_index' + str(img_index) + '_Optim'
+    save_prefix = F_name + '_P_SIFT_index' + str(img_index)+'Unrect'#+ '_Optim' #+ 'traindata'
+
+
+    # # test F 
+    # for i in range(10):
+    #     kf.F_GT_rected_get()
+    #     F_G = kf.F.copy()
+    #     kf.F += i/10.
+    #     L1_loss = abs(np.sum(F_G - kf.F) / 9.)
+
+    #     ep_c = kf.metrics_ep_cons(img_index)
+    #     ep_d = kf.metrics_ep_dist(img_index)
+
+    #     TxtName = os.path.join(save_path,save_prefix+'.txt')
+
+    #     print("Write in txt file: %s" %TxtName)
+    #     with open(TxtName, 'a') as f:
+    #         f.truncate()
+    #     with open(TxtName, 'a') as f:
+    #         f.write('\nUse '+F_name+',ImgIndex='+str(img_index))
+    #         f.write('\nF change: '+str(i/10))
+    #         f.write('\nL1loss: '+str(L1_loss))
+    #         f.write('\nepipolar constraint: '+str(ep_c))
+    #         f.write('\nepipolar distance: '+str(ep_d))
 
     # load F
     print('load %r is :' %save_prefix ,kf.F_load(F_path ))
     
     # # Estimation F
+    # kf.exact_match_points_sift(img_index)
     # print("F Estimation with RANSAC: ",kf.F_ES())
-    
+
     kf.draw_epipolar_lines(img_index, save_prefix)
     ep_c = kf.metrics_ep_cons(img_index)
     ep_d = kf.metrics_ep_dist(img_index)
@@ -462,3 +517,23 @@ if __name__ == "__main__":
         f.write('Use '+F_name+',ImgIndex='+str(img_index))
         f.write('\nepipolar constraint: '+str(ep_c))
         f.write('\nepipolar distance: '+str(ep_d))
+
+
+    # # test Metrics
+    # for i in range(0,10):
+    #     kf.MP_move(i) 
+    #     save_prefix = F_name + '_P_SIFT_index' + str(img_index) + '_Optim'
+    #     save_prefix += '_move%s' %i
+    #     kf.draw_epipolar_lines(img_index, save_prefix)
+    #     ep_c = kf.metrics_ep_cons(img_index)
+    #     ep_d = kf.metrics_ep_dist(img_index)
+    #     print('epipolar constraint: ', ep_c)
+    #     print('epipolar distance: ', ep_d)
+
+    #     TxtName = os.path.join(save_path,save_prefix+'.txt')
+
+    #     print("Write in txt file: %s" %TxtName)
+    #     with open(TxtName, 'w') as f:
+    #         f.write('Use '+F_name+',ImgIndex='+str(img_index))
+    #         f.write('\nepipolar constraint: '+str(ep_c))
+    #         f.write('\nepipolar distance: '+str(ep_d))
